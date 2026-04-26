@@ -2,58 +2,87 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PZ CHAT V4</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Messenger PZ v7</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --primary: #a033ff; --bg: #000; --card: #1c1c1e; --text: #fff; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; overflow: hidden; }
+        :root { --primary: #0084ff; --bg: #000; --text: #fff; --gray: #242526; --sec-text: #b0b3b8; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 0; overflow: hidden; }
         .hidden { display: none !important; }
-        input { background: #2c2c2e; border: 1px solid #3a3a3c; padding: 16px; border-radius: 12px; color: #fff; width: 100%; box-sizing: border-box; outline: none; margin-bottom: 12px; font-size: 16px; }
-        .btn { background: var(--primary); color: #fff; border: none; padding: 16px; border-radius: 12px; font-weight: bold; width: 100%; cursor: pointer; }
-        .auth { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; justify-content: center; padding: 40px; text-align: center; }
-        .header { padding: 15px 20px; border-bottom: 1px solid #2c2c2e; display: flex; justify-content: space-between; align-items: center; background: #000; }
-        .friend-item { padding: 15px; background: var(--card); border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; }
-        #chat-window { position: fixed; inset: 0; background: #000; z-index: 900; display: flex; flex-direction: column; }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
-        .msg { padding: 10px 15px; border-radius: 18px; max-width: 75%; font-size: 15px; }
-        .msg.me { align-self: flex-end; background: var(--primary); border-bottom-right-radius: 4px; }
-        .msg.them { align-self: flex-start; background: #2c2c2e; border-bottom-left-radius: 4px; }
-        .input-area { padding: 10px 15px 35px; display: flex; gap: 10px; border-top: 1px solid #2c2c2e; background: #000; }
+        
+        /* Header Messenger */
+        .header { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 100; }
+        .header h1 { font-size: 25px; font-weight: 800; margin: 0; }
+        .circle-btn { width: 36px; height: 36px; background: var(--gray); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; color: white; cursor: pointer; }
+
+        /* Danh sách đoạn chat */
+        .chat-list { height: calc(100vh - 120px); overflow-y: auto; }
+        .chat-item { display: flex; align-items: center; padding: 12px 16px; cursor: pointer; transition: 0.1s; }
+        .chat-item:active { background: #1c1c1c; }
+        .avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #0084ff, #a033ff); margin-right: 15px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 22px; position: relative; }
+        .online { width: 14px; height: 14px; background: #31a24c; border: 3px solid #000; border-radius: 50%; position: absolute; bottom: 2px; right: 2px; }
+        .chat-info { flex: 1; overflow: hidden; }
+        .chat-info .name { font-size: 16px; font-weight: 600; margin-bottom: 2px; }
+        .chat-info .last-msg { font-size: 14px; color: var(--sec-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Cửa sổ Chat */
+        #chat-window { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; }
+        .chat-header { padding: 10px 12px; display: flex; align-items: center; border-bottom: 0.5px solid #222; }
+        .messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; }
+        .msg-row { display: flex; flex-direction: column; margin-bottom: 6px; max-width: 75%; }
+        .msg-row.me { align-self: flex-end; align-items: flex-end; }
+        .msg-row.them { align-self: flex-start; align-items: flex-start; }
+        .bubble { padding: 8px 14px; border-radius: 18px; font-size: 15px; word-wrap: break-word; }
+        .me .bubble { background: var(--primary); color: white; border-bottom-right-radius: 4px; }
+        .them .bubble { background: #303030; color: white; border-bottom-left-radius: 4px; }
+        .time { font-size: 10px; color: var(--sec-text); margin-top: 3px; }
+
+        /* Ô nhập liệu */
+        .input-bar { padding: 10px 15px 35px; border-top: 0.5px solid #222; display: flex; align-items: center; gap: 10px; }
+        .input-bar input { flex: 1; background: #242526; border: none; padding: 10px 15px; border-radius: 20px; color: white; outline: none; font-size: 16px; }
+        .send-icon { color: var(--primary); font-weight: bold; border: none; background: none; font-size: 16px; }
+
+        /* Auth */
+        .auth-screen { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+        .auth-screen input { width: 100%; max-width: 300px; background: #1c1c1e; border: none; padding: 16px; border-radius: 12px; margin-bottom: 12px; color: white; }
     </style>
 </head>
 <body>
 
-    <div id="auth-box" class="auth">
-        <h1 style="letter-spacing: 3px;">PZ CHAT</h1>
+    <div id="auth-box" class="auth-screen">
+        <div class="avatar" style="width:80px; height:80px; margin-bottom:20px;">PZ</div>
+        <h2 style="margin-bottom:30px;">PZ Messenger</h2>
         <input type="text" id="u-name" placeholder="@username">
         <input type="password" id="u-pass" placeholder="Mật khẩu">
-        <button class="btn" onclick="handleAuth()">ĐĂNG NHẬP</button>
+        <button class="circle-btn" style="width:200px; border-radius:10px; font-weight:bold; margin-bottom:10px;" onclick="login()">Đăng nhập</button>
+        <button style="background:none; border:none; color:var(--primary);" onclick="register()">Tạo tài khoản</button>
     </div>
 
     <div id="main-app" class="hidden">
         <div class="header">
-            <h2 id="display-me" style="margin:0; color: var(--primary);"></h2>
-            <button onclick="logout()" style="background:none; border:none; color:#ff4444;">Thoát</button>
+            <h1>Đoạn chat</h1>
+            <div style="display:flex; gap:10px;">
+                <button class="circle-btn" onclick="logout()">✕</button>
+            </div>
         </div>
-        <div style="padding: 15px;">
-            <input type="text" id="find-user" placeholder="Tìm @name..." onkeyup="search(this.value)">
+        <div style="padding:10px 16px;">
+            <input type="text" id="find-user" placeholder="Tìm kiếm" onkeyup="search(this.value)" style="width:100%; background:#242526; border:none; padding:10px; border-radius:10px; color:white;">
             <div id="search-res"></div>
-            <div id="list" style="margin-top: 20px;"></div>
         </div>
+        <div id="list" class="chat-list"></div>
     </div>
 
     <div id="chat-window" class="hidden">
-        <div class="header">
-            <button onclick="closeChat()" style="background:none; border:none; color:var(--primary); font-size:22px;">❮</button>
-            <b id="chat-with"></b>
-            <div style="width:30px;"></div>
+        <div class="chat-header">
+            <button class="circle-btn" style="background:none; font-size:24px; color:var(--primary);" onclick="closeChat()">❮</button>
+            <div class="avatar" style="width:36px; height:36px; font-size:14px; margin-left:10px;" id="h-ava"></div>
+            <b id="chat-with" style="margin-left:10px;"></b>
         </div>
-        <div id="chat-box" class="chat-messages"></div>
-        <div class="input-area">
-            <input type="text" id="msg-input" placeholder="Aa..." onkeypress="if(event.key==='Enter')send()" style="margin:0;">
-            <button onclick="send()" style="background:var(--primary); border:none; color:#fff; padding:0 20px; border-radius:12px;">Gửi</button>
+        <div id="chat-box" class="messages"></div>
+        <div class="input-bar">
+            <input type="text" id="msg-input" placeholder="Aa" onkeypress="if(event.key==='Enter')send()">
+            <button class="send-icon" onclick="send()">GỬI</button>
         </div>
     </div>
 
@@ -61,93 +90,76 @@
         const conf = { databaseURL: "https://pz-chat-f22e1-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(conf);
         const rtdb = firebase.database();
-        
         let me = localStorage.getItem('pz_user');
         let talkingTo = "";
 
-        // Yêu cầu quyền thông báo ngay khi mở app
-        if ("Notification" in window) {
-            Notification.requestPermission();
-        }
+        const ting = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
 
         if(me) showApp();
 
-        async function handleAuth() {
-            const user = document.getElementById('u-name').value.trim().toLowerCase();
-            const pass = document.getElementById('u-pass').value.trim();
-            if(!user.startsWith('@')) return alert("Phải có @ nhé!");
-            
-            const snapshot = await rtdb.ref('accounts/' + user.replace('@','')).once('value');
-            const data = snapshot.val();
-
-            if(data) {
-                if(data.pass === pass) loginSuccess(user);
-                else alert("Sai mật khẩu!");
-            } else {
-                await rtdb.ref('accounts/' + user.replace('@','')).set({ pass: pass });
-                loginSuccess(user);
-            }
+        async function register() {
+            const u = document.getElementById('u-name').value.trim().toLowerCase();
+            const p = document.getElementById('u-pass').value.trim();
+            if(!u.startsWith('@')) return alert("Cần có @");
+            const s = await rtdb.ref('accounts/'+u.replace('@','')).once('value');
+            if(s.exists()) return alert("Tên đã có người dùng!");
+            await rtdb.ref('accounts/'+u.replace('@','')).set({pass:p});
+            alert("Đã tạo acc thành công!");
         }
 
-        function loginSuccess(user) {
-            me = user;
-            localStorage.setItem('pz_user', me);
-            showApp();
+        async function login() {
+            const u = document.getElementById('u-name').value.trim().toLowerCase();
+            const p = document.getElementById('u-pass').value.trim();
+            const s = await rtdb.ref('accounts/'+u.replace('@','')).once('value');
+            if(s.val()?.pass === p) {
+                me = u; localStorage.setItem('pz_user', me); showApp();
+            } else alert("Sai mật khẩu!");
         }
 
         function showApp() {
             document.getElementById('auth-box').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
-            document.getElementById('display-me').innerText = me;
+            document.getElementById('display-me');
             loadFriends();
-            listenForAllMessages();
+            listenGlobal();
         }
 
-        function logout() {
-            localStorage.removeItem('pz_user');
-            location.reload();
-        }
-
-        // Lắng nghe thông báo tin nhắn mới
-        function listenForAllMessages() {
-            rtdb.ref('messages').on('child_added', (snapshot) => {
-                const chatId = snapshot.key;
-                if (chatId.includes(me.replace('@',''))) {
-                    rtdb.ref('messages/' + chatId).limitToLast(1).on('child_added', (msgSnap) => {
-                        const msg = msgSnap.val();
-                        if (msg.s !== me && talkingTo !== msg.s) {
-                            showNotification(msg.s, msg.t);
-                        }
-                    });
-                }
-            });
-        }
-
-        function showNotification(from, text) {
-            if (Notification.permission === "granted") {
-                new Notification("PZ CHAT: " + from, { body: text });
-            }
-        }
+        function logout() { localStorage.removeItem('pz_user'); location.reload(); }
 
         function search(v) {
-            v = v.toLowerCase();
-            if(v.length < 2 || v === me) return;
-            document.getElementById('search-res').innerHTML = `<button class="btn" style="padding:10px; margin-top:5px;" onclick="addFriend('${v}')">Thêm bạn ${v}</button>`;
+            v = v.toLowerCase(); if(v.length < 2 || v === me) return;
+            document.getElementById('search-res').innerHTML = `<div class="chat-item" onclick="addFriend('${v}')"><div class="avatar">+</div><b>Thêm bạn ${v}</b></div>`;
         }
 
         function addFriend(n) {
             rtdb.ref('users/'+me.replace('@','')+'/friends/'+n.replace('@','')).set(true);
             rtdb.ref('users/'+n.replace('@','')+'/friends/'+me.replace('@','')).set(true);
-            document.getElementById('find-user').value = "";
-            document.getElementById('search-res').innerHTML = "";
+            document.getElementById('find-user').value = ""; document.getElementById('search-res').innerHTML = "";
         }
 
         function loadFriends() {
             rtdb.ref('users/'+me.replace('@','')+'/friends').on('value', s => {
-                const div = document.getElementById('list'); 
-                div.innerHTML = "<h4>Bạn bè:</h4>";
+                const div = document.getElementById('list'); div.innerHTML = "";
                 s.forEach(c => {
-                    div.innerHTML += `<div class="friend-item" onclick="openChat('@${c.key}')"><b>@${c.key}</b></div>`;
+                    const fname = '@' + c.key;
+                    const id = [me.replace('@',''), c.key].sort().join('_');
+                    // Lấy tin nhắn cuối
+                    rtdb.ref('messages/'+id).limitToLast(1).on('value', ms => {
+                        let last = "Bấm để bắt đầu nhắn tin";
+                        ms.forEach(m => { last = (m.val().s === me ? "Bạn: " : "") + m.val().t });
+                        const item = document.getElementById('item-'+c.key);
+                        if(item) { item.querySelector('.last-msg').innerText = last; }
+                        else {
+                            div.innerHTML += `
+                            <div class="chat-item" id="item-${c.key}" onclick="openChat('${fname}')">
+                                <div class="avatar">${c.key[0].toUpperCase()}<div class="online"></div></div>
+                                <div class="chat-info">
+                                    <div class="name">${fname}</div>
+                                    <div class="last-msg">${last}</div>
+                                </div>
+                            </div>`;
+                        }
+                    });
                 });
             });
         }
@@ -155,29 +167,43 @@
         function openChat(n) {
             talkingTo = n;
             document.getElementById('chat-with').innerText = n;
+            document.getElementById('h-ava').innerText = n[1].toUpperCase();
             document.getElementById('chat-window').classList.remove('hidden');
             const id = [me.replace('@',''), talkingTo.replace('@','')].sort().join('_');
-            rtdb.ref('messages/' + id).on('value', s => {
+            rtdb.ref('messages/'+id).off();
+            rtdb.ref('messages/'+id).on('value', s => {
                 const b = document.getElementById('chat-box'); b.innerHTML = "";
                 s.forEach(c => {
                     const d = c.val();
-                    b.innerHTML += `<div class="msg ${d.s===me?'me':'them'}">${d.t}</div>`;
+                    const time = d.time ? new Date(d.time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
+                    const cls = d.s === me ? 'me' : 'them';
+                    b.innerHTML += `<div class="msg-row ${cls}"><div class="bubble">${d.t}</div><div class="time">${time}</div></div>`;
                 });
                 b.scrollTop = b.scrollHeight;
             });
         }
 
         function send() {
-            const t = document.getElementById('msg-input').value;
-            if(!t) return;
+            const i = document.getElementById('msg-input'); if(!i.value.trim()) return;
             const id = [me.replace('@',''), talkingTo.replace('@','')].sort().join('_');
-            rtdb.ref('messages/' + id).push({ s: me, t: t });
-            document.getElementById('msg-input').value = "";
+            rtdb.ref('messages/'+id).push({ s: me, t: i.value, time: Date.now() });
+            i.value = "";
         }
 
-        function closeChat() { 
-            talkingTo = "";
-            document.getElementById('chat-window').classList.add('hidden'); 
+        function closeChat() { document.getElementById('chat-window').classList.add('hidden'); talkingTo = ""; }
+
+        function listenGlobal() {
+            rtdb.ref('messages').on('child_added', snap => {
+                if(snap.key.includes(me.replace('@',''))) {
+                    rtdb.ref('messages/'+snap.key).limitToLast(1).on('child_added', m => {
+                        const d = m.val();
+                        if(d.s !== me && talkingTo !== d.s && (Date.now() - d.time < 3000)) {
+                            ting.play();
+                            if(Notification.permission === "granted") new Notification("Tin nhắn mới từ "+d.s, {body: d.t});
+                        }
+                    });
+                }
+            });
         }
     </script>
 </body>
