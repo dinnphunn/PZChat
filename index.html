@@ -3,52 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PZ Messenger V9</title>
+    <title>PZ Messenger V11</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         :root { --primary: #0084ff; --bg: #000; --text: #fff; --gray: #242526; --sec-text: #b0b3b8; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 0; overflow: hidden; }
         .hidden { display: none !important; }
-        
-        /* Header */
         .header { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); z-index: 100; border-bottom: 0.5px solid #222; }
         .header h1 { font-size: 24px; font-weight: 800; margin: 0; }
-        .circle-btn { width: 36px; height: 36px; background: var(--gray); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; color: white; cursor: pointer; font-size: 18px; }
-
-        /* Tabs */
+        .circle-btn { width: 36px; height: 36px; background: var(--gray); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; color: white; cursor: pointer; }
         .tabs { display: flex; background: #000; border-bottom: 0.5px solid #222; }
         .tab { flex: 1; padding: 12px; text-align: center; color: var(--sec-text); font-weight: 600; font-size: 14px; }
         .tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
-
-        /* List Items */
         .list-container { height: calc(100vh - 160px); overflow-y: auto; }
         .chat-item { display: flex; align-items: center; padding: 12px 16px; }
         .avatar { width: 50px; height: 50px; border-radius: 50%; background: var(--gray); margin-right: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .chat-info { flex: 1; }
-        .name { font-weight: 600; font-size: 16px; }
-        .sub-text { font-size: 13px; color: var(--sec-text); }
-
-        /* Chat Window */
-        #chat-window { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; transition: 0.3s; }
-        .chat-header { padding: 10px 12px; display: flex; align-items: center; border-bottom: 0.5px solid #222; background: rgba(0,0,0,0.8); }
+        #chat-window { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; }
+        .chat-header { padding: 10px 12px; display: flex; align-items: center; border-bottom: 0.5px solid #222; }
         .messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; }
         .msg-row { display: flex; flex-direction: column; margin-bottom: 8px; max-width: 75%; }
         .msg-row.me { align-self: flex-end; align-items: flex-end; }
         .bubble { padding: 10px 14px; border-radius: 18px; font-size: 15px; }
         .me .bubble { background: var(--primary); color: white; }
         .them .bubble { background: #303030; color: white; }
-
-        /* Settings Overlay */
-        #settings-box { position: absolute; top: 60px; right: 10px; background: #242526; padding: 15px; border-radius: 15px; width: 200px; z-index: 1100; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
-        .theme-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
-        .theme-dot { width: 25px; height: 25px; border-radius: 50%; border: 2px solid #fff; }
-
+        .voice-bubble { display: flex; align-items: center; gap: 10px; min-width: 150px; }
+        #settings-box { position: absolute; top: 60px; right: 10px; background: #242526; padding: 15px; border-radius: 15px; width: 220px; z-index: 1100; }
+        .setting-btn { width: 100%; background: #3a3b3c; border: none; color: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; text-align: left; }
         .input-bar { padding: 10px 15px 35px; display: flex; align-items: center; gap: 10px; background: #000; border-top: 0.5px solid #222; }
         .input-bar input { flex: 1; background: #242526; border: none; padding: 10px 15px; border-radius: 20px; color: white; outline: none; }
-        
-        .req-btn { padding: 5px 12px; border-radius: 8px; border: none; font-weight: bold; margin-left: 5px; cursor: pointer; }
-        .btn-blue { background: var(--primary); color: white; }
+        .record-btn { font-size: 22px; cursor: pointer; transition: 0.2s; border: none; background: none; padding: 0; }
+        .recording { color: #ff4444; transform: scale(1.2); }
     </style>
 </head>
 <body>
@@ -57,29 +42,22 @@
         <h2 style="margin-bottom:20px;">PZ Messenger</h2>
         <input type="text" id="u-name" placeholder="@username" style="width:100%;padding:15px;margin-bottom:10px;border-radius:10px;border:none;background:#222;color:white;">
         <input type="password" id="u-pass" placeholder="Mật khẩu" style="width:100%;padding:15px;margin-bottom:20px;border-radius:10px;border:none;background:#222;color:white;">
-        <button onclick="login()" class="btn-blue" style="width:100%;padding:15px;border-radius:10px;border:none;font-weight:bold;">ĐĂNG NHẬP</button>
+        <button onclick="login()" style="width:100%;padding:15px;border-radius:10px;border:none;background:var(--primary);color:white;font-weight:bold;">ĐĂNG NHẬP</button>
         <button onclick="register()" style="background:none;border:none;color:var(--primary);margin-top:15px;">Tạo tài khoản</button>
     </div>
 
     <div id="main-app" class="hidden">
-        <div class="header">
-            <h1 id="app-title">Đoạn chat</h1>
-            <button class="circle-btn" onclick="logout()">✕</button>
-        </div>
+        <div class="header"><h1>Đoạn chat</h1><button class="circle-btn" onclick="logout()">✕</button></div>
         <div class="tabs">
             <div class="tab active" onclick="switchTab('chats')">ĐOẠN CHAT</div>
             <div class="tab" onclick="switchTab('reqs')">LỜI MỜI</div>
         </div>
-        
         <div id="tab-chats" class="list-container">
             <div style="padding:10px 16px;"><input type="text" id="find-user" placeholder="Tìm @username..." onkeyup="searchUser(this.value)" style="width:100%;background:#222;border:none;padding:10px;border-radius:10px;color:white;"></div>
             <div id="search-res"></div>
             <div id="chat-list"></div>
         </div>
-
-        <div id="tab-reqs" class="list-container hidden">
-            <div id="req-list"></div>
-        </div>
+        <div id="tab-reqs" class="list-container hidden"><div id="req-list"></div></div>
     </div>
 
     <div id="chat-window" class="hidden">
@@ -91,16 +69,17 @@
         </div>
 
         <div id="settings-box" class="hidden">
-            <p style="font-size:12px;color:var(--sec-text);margin:0 0 10px;">CÀI ĐẶT</p>
-            <button onclick="setNickname()" style="width:100%;background:#3a3b3c;border:none;color:white;padding:8px;border-radius:5px;margin-bottom:10px;">Đổi biệt danh</button>
-            <p style="font-size:12px;color:var(--sec-text);margin:5px 0;">CHỦ ĐỀ</p>
-            <div class="theme-grid" id="theme-list"></div>
+            <button class="setting-btn" onclick="setNickname()">✏️ Đổi biệt danh</button>
+            <button class="setting-btn" style="color:#ff4444;" onclick="removeFriend()">💔 Hủy kết bạn</button>
         </div>
 
         <div id="chat-box" class="messages"></div>
         <div class="input-bar">
-            <label for="img-in" style="font-size:22px;cursor:pointer;">📷</label>
+            <label for="img-in" style="font-size:22px;">📷</label>
             <input type="file" id="img-in" class="hidden" accept="image/*" onchange="sendImg(this)">
+            
+            <button id="record-btn" class="record-btn" ontouchstart="startRecording()" ontouchend="stopRecording()" onmousedown="startRecording()" onmouseup="stopRecording()">🎤</button>
+            
             <input type="text" id="msg-input" placeholder="Aa" onkeypress="if(event.key==='Enter')sendText()">
             <button style="border:none;background:none;color:var(--primary);font-weight:bold;" onclick="sendText()">GỬI</button>
         </div>
@@ -110,42 +89,28 @@
         const conf = { databaseURL: "https://pz-chat-f22e1-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(conf);
         const rtdb = firebase.database();
-        let me = localStorage.getItem('pz_user');
-        let talkingTo = "";
-        const themes = [
-            '#0084ff', '#ff5252', '#ff4081', '#7c4dff', '#00e676', 
-            'linear-gradient(45deg, #ff00cc, #3333ff)', 
-            'linear-gradient(45deg, #00d2ff, #3a7bd5)',
-            'linear-gradient(45deg, #f27121, #e94057, #8a2387)',
-            'linear-gradient(45deg, #11998e, #38ef7d)',
-            'linear-gradient(45deg, #FC466B, #3F5EFB)'
-        ];
+        let me = localStorage.getItem('pz_user'), talkingTo = "", mediaRecorder, audioChunks = [];
 
         window.onload = () => { if(me) showApp(); else document.getElementById('auth-box').classList.remove('hidden'); };
 
         async function register() {
-            const u = document.getElementById('u-name').value.trim().toLowerCase();
-            const p = document.getElementById('u-pass').value.trim();
-            if(!u.startsWith('@')) return alert("Cần có @");
+            const u = document.getElementById('u-name').value.trim().toLowerCase(), p = document.getElementById('u-pass').value.trim();
+            if(!u.startsWith('@')) return alert("Cần @");
             const s = await rtdb.ref('accounts/'+u.replace('@','')).once('value');
-            if(s.exists()) return alert("Tên đã tồn tại!");
-            await rtdb.ref('accounts/'+u.replace('@','')).set({pass:p});
-            alert("Đã tạo acc!");
+            if(s.exists()) return alert("Tên đã có!");
+            await rtdb.ref('accounts/'+u.replace('@','')).set({pass:p}); alert("Xong!");
         }
 
         async function login() {
-            const u = document.getElementById('u-name').value.trim().toLowerCase();
-            const p = document.getElementById('u-pass').value.trim();
+            const u = document.getElementById('u-name').value.trim().toLowerCase(), p = document.getElementById('u-pass').value.trim();
             const s = await rtdb.ref('accounts/'+u.replace('@','')).once('value');
-            if(s.val()?.pass === p) { me = u; localStorage.setItem('pz_user', me); showApp(); }
-            else alert("Sai mật khẩu!");
+            if(s.val()?.pass === p) { me = u; localStorage.setItem('pz_user', me); showApp(); } else alert("Sai!");
         }
 
         function showApp() {
             document.getElementById('auth-box').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
-            document.getElementById('app-title').innerText = "Chat của " + me;
-            loadChats(); loadRequests(); buildThemes();
+            loadChats(); loadRequests();
         }
 
         function switchTab(t) {
@@ -157,20 +122,16 @@
 
         function searchUser(v) {
             v = v.toLowerCase(); if(v.length < 2 || v === me) return;
-            document.getElementById('search-res').innerHTML = `<div class="chat-item"><div class="avatar">?</div><div class="chat-info"><div class="name">${v}</div></div><button class="req-btn btn-blue" onclick="sendRequest('${v}')">Thêm bạn</button></div>`;
+            document.getElementById('search-res').innerHTML = `<div class="chat-item"><div class="avatar">?</div><div class="chat-info"><div class="name">${v}</div></div><button style="background:var(--primary);border:none;color:white;padding:5px 10px;border-radius:5px;" onclick="sendRequest('${v}')">Thêm</button></div>`;
         }
 
-        function sendRequest(n) {
-            rtdb.ref('requests/'+n.replace('@','')+'/'+me.replace('@','')).set(true);
-            alert("Đã gửi lời mời cho " + n);
-        }
+        function sendRequest(n) { rtdb.ref('requests/'+n.replace('@','')+'/'+me.replace('@','')).set(true); alert("Đã gửi!"); }
 
         function loadRequests() {
             rtdb.ref('requests/'+me.replace('@','')).on('value', s => {
                 const div = document.getElementById('req-list'); div.innerHTML = "";
-                if(!s.exists()) div.innerHTML = "<p style='text-align:center;color:#888;margin-top:20px;'>Không có lời mời nào</p>";
                 s.forEach(c => {
-                    div.innerHTML += `<div class="chat-item"><div class="avatar">${c.key[0].toUpperCase()}</div><div class="chat-info"><div class="name">@${c.key}</div><div class="sub-text">Muốn kết bạn với bạn</div></div><button class="req-btn btn-blue" onclick="acceptFriend('${c.key}')">Chấp nhận</button></div>`;
+                    div.innerHTML += `<div class="chat-item"><div class="avatar">${c.key[0].toUpperCase()}</div><div class="chat-info"><div class="name">@${c.key}</div></div><button style="background:var(--primary);border:none;color:white;padding:5px 10px;border-radius:5px;" onclick="acceptFriend('${c.key}')">Chấp nhận</button></div>`;
                 });
             });
         }
@@ -186,12 +147,9 @@
                 const div = document.getElementById('chat-list'); div.innerHTML = "";
                 s.forEach(c => {
                     const friend = '@' + c.key;
-                    // Lấy biệt danh nếu có
                     rtdb.ref('settings/'+[me.replace('@',''),c.key].sort().join('_')+'/nick_'+c.key).on('value', n => {
                         const dname = n.val() || friend;
-                        const existing = document.getElementById('chat-'+c.key);
-                        if(existing) existing.querySelector('.name').innerText = dname;
-                        else div.innerHTML += `<div class="chat-item" id="chat-${c.key}" onclick="openChat('${friend}')"><div class="avatar">${c.key[0].toUpperCase()}</div><div class="chat-info"><div class="name">${dname}</div><div class="sub-text">Bấm để nhắn tin</div></div></div>`;
+                        div.innerHTML += `<div class="chat-item" id="chat-${c.key}" onclick="openChat('${friend}')"><div class="avatar">${c.key[0].toUpperCase()}</div><div class="chat-info"><div class="name">${dname}</div></div></div>`;
                     });
                 });
             });
@@ -200,24 +158,52 @@
         function openChat(n) {
             talkingTo = n; document.getElementById('chat-window').classList.remove('hidden');
             const cid = [me.replace('@',''), talkingTo.replace('@','')].sort().join('_');
-            
-            // Load Nickname & Theme
             rtdb.ref('settings/'+cid).on('value', s => {
                 const data = s.val() || {};
                 document.getElementById('chat-with').innerText = data['nick_'+talkingTo.replace('@','')] || talkingTo;
                 document.documentElement.style.setProperty('--primary', data.theme || '#0084ff');
             });
-
             rtdb.ref('messages/'+cid).off();
             rtdb.ref('messages/'+cid).on('value', s => {
                 const b = document.getElementById('chat-box'); b.innerHTML = "";
                 s.forEach(c => {
                     const d = c.val(); const cls = d.s === me ? 'me' : 'them';
-                    let content = d.t ? `<div class="bubble">${d.t}</div>` : `<img src="${d.img}" style="width:100%;border-radius:12px;">`;
+                    let content = d.t ? `<div class="bubble">${d.t}</div>` : (d.img ? `<img src="${d.img}" style="width:100%;border-radius:12px;">` : `<div class="bubble voice-bubble"><button onclick="playVoice('${d.voice}')" style="background:none;border:none;font-size:20px;">▶️</button><div style="height:2px;flex:1;background:rgba(255,255,255,0.3);border-radius:2px;"></div></div>`);
                     b.innerHTML += `<div class="msg-row ${cls}">${content}</div>`;
                 });
                 b.scrollTop = b.scrollHeight;
             });
+        }
+
+        // --- HỆ THỐNG GHI ÂM ---
+        async function startRecording() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const cid = [me.replace('@',''), talkingTo.replace('@','')].sort().join('_');
+                    rtdb.ref('messages/'+cid).push({ s: me, voice: e.target.result, time: Date.now() });
+                };
+                reader.readAsDataURL(audioBlob);
+                audioChunks = [];
+            };
+            mediaRecorder.start();
+            document.getElementById('record-btn').classList.add('recording');
+        }
+
+        function stopRecording() {
+            if(mediaRecorder) {
+                mediaRecorder.stop();
+                document.getElementById('record-btn').classList.remove('recording');
+            }
+        }
+
+        function playVoice(base64) {
+            const audio = new Audio(base64);
+            audio.play();
         }
 
         function sendText() {
@@ -237,24 +223,17 @@
         }
 
         function setNickname() {
-            const n = prompt("Nhập biệt danh cho " + talkingTo);
-            if(n) {
-                const cid = [me.replace('@',''), talkingTo.replace('@','')].sort().join('_');
-                rtdb.ref('settings/'+cid+'/nick_'+talkingTo.replace('@','')).set(n);
-            }
+            const n = prompt("Biệt danh cho " + talkingTo);
+            if(n) rtdb.ref('settings/'+[me.replace('@',''),talkingTo.replace('@','')].sort().join('_')+'/nick_'+talkingTo.replace('@','')).set(n);
         }
 
-        function buildThemes() {
-            const div = document.getElementById('theme-list');
-            themes.forEach(t => {
-                const dot = document.createElement('div');
-                dot.className = 'theme-dot'; dot.style.background = t;
-                dot.onclick = () => {
-                    const cid = [me.replace('@',''), talkingTo.replace('@','')].sort().join('_');
-                    rtdb.ref('settings/'+cid+'/theme').set(t);
-                };
-                div.appendChild(dot);
-            });
+        function removeFriend() {
+            if(confirm("Hủy kết bạn?")) {
+                const fId = talkingTo.replace('@',''), mId = me.replace('@','');
+                rtdb.ref('users/'+mId+'/friends/'+fId).remove();
+                rtdb.ref('users/'+fId+'/friends/'+mId).remove();
+                closeChat();
+            }
         }
 
         function toggleSettings() { document.getElementById('settings-box').classList.toggle('hidden'); }
