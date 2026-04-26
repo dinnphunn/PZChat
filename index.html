@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PZ Messenger V11</title>
+    <title>PZ Messenger V15</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -14,48 +14,70 @@
         .header h1 { font-size: 24px; font-weight: 800; margin: 0; }
         .circle-btn { width: 36px; height: 36px; background: var(--gray); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; color: white; cursor: pointer; }
         .tabs { display: flex; background: #000; border-bottom: 0.5px solid #222; }
-        .tab { flex: 1; padding: 12px; text-align: center; color: var(--sec-text); font-weight: 600; font-size: 14px; }
+        .tab { flex: 1; padding: 12px; text-align: center; color: var(--sec-text); font-weight: 600; font-size: 13px; cursor: pointer; position: relative; }
         .tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+        .badge { position: absolute; top: 5px; right: 5px; background: #ff4444; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; display: none; }
+        .has-notif .badge { display: block; }
         .list-container { height: calc(100vh - 160px); overflow-y: auto; }
-        .chat-item { display: flex; align-items: center; padding: 12px 16px; }
-        .avatar { width: 50px; height: 50px; border-radius: 50%; background: var(--gray); margin-right: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .chat-item { display: flex; align-items: center; padding: 12px 16px; position: relative; }
+        .avatar { width: 52px; height: 52px; border-radius: 50%; background: #3a3b3c; margin-right: 12px; display: flex; align-items: center; justify-content: center; font-weight: bold; position: relative; font-size: 20px; }
+        .online-dot { width: 14px; height: 14px; background: #31a24c; border: 3px solid #000; border-radius: 50%; position: absolute; bottom: 2px; right: 2px; display: none; }
+        .is-online .online-dot { display: block; }
+        .chat-info { flex: 1; border-bottom: 0.5px solid #1c1c1c; padding-bottom: 12px; }
         #chat-window { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; }
-        .chat-header { padding: 10px 12px; display: flex; align-items: center; border-bottom: 0.5px solid #222; }
         .messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; }
         .msg-row { display: flex; flex-direction: column; margin-bottom: 8px; max-width: 75%; }
         .msg-row.me { align-self: flex-end; align-items: flex-end; }
         .bubble { padding: 10px 14px; border-radius: 18px; font-size: 15px; }
         .me .bubble { background: var(--primary); color: white; }
         .them .bubble { background: #303030; color: white; }
-        .voice-bubble { display: flex; align-items: center; gap: 10px; min-width: 150px; }
-        #settings-box { position: absolute; top: 60px; right: 10px; background: #242526; padding: 15px; border-radius: 15px; width: 220px; z-index: 1100; }
-        .setting-btn { width: 100%; background: #3a3b3c; border: none; color: white; padding: 10px; border-radius: 8px; margin-bottom: 8px; text-align: left; }
-        .input-bar { padding: 10px 15px 35px; display: flex; align-items: center; gap: 10px; background: #000; border-top: 0.5px solid #222; }
+        .overlay-box { position: absolute; background: #242526; padding: 16px; border-radius: 15px; width: 240px; z-index: 1100; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        #settings-main { top: 60px; left: 16px; }
+        .search-box-wrap { padding: 16px; }
+        .search-input { width: 100%; background: #242526; border: none; padding: 12px 15px; border-radius: 10px; color: white; outline: none; }
+        .input-bar { padding: 10px 15px 35px; display: flex; align-items: center; gap: 12px; background: #000; border-top: 0.5px solid #222; }
         .input-bar input { flex: 1; background: #242526; border: none; padding: 10px 15px; border-radius: 20px; color: white; outline: none; }
-        .record-btn { font-size: 22px; cursor: pointer; transition: 0.2s; border: none; background: none; padding: 0; }
-        .recording { color: #ff4444; transform: scale(1.2); }
+        .btn-blue { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="auth-box" class="hidden" style="position:fixed;inset:0;background:#000;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;">
-        <h2 style="margin-bottom:20px;">PZ Messenger</h2>
-        <input type="text" id="u-name" placeholder="@username" style="width:100%;padding:15px;margin-bottom:10px;border-radius:10px;border:none;background:#222;color:white;">
-        <input type="password" id="u-pass" placeholder="Mật khẩu" style="width:100%;padding:15px;margin-bottom:20px;border-radius:10px;border:none;background:#222;color:white;">
-        <button onclick="login()" style="width:100%;padding:15px;border-radius:10px;border:none;background:var(--primary);color:white;font-weight:bold;">ĐĂNG NHẬP</button>
-        <button onclick="register()" style="background:none;border:none;color:var(--primary);margin-top:15px;">Tạo tài khoản</button>
+        <h1>PZ Messenger</h1>
+        <input type="text" id="u-name" placeholder="@username" style="width:100%;padding:15px;margin-bottom:10px;border-radius:12px;background:#222;color:white;border:none;">
+        <input type="password" id="u-pass" placeholder="Mật khẩu" style="width:100%;padding:15px;margin-bottom:20px;border-radius:12px;background:#222;color:white;border:none;">
+        <button onclick="login()" style="width:100%;padding:15px;border-radius:12px;background:#0084ff;color:white;font-weight:bold;border:none;">Đăng nhập</button>
+        <button onclick="register()" style="background:none;border:none;color:#0084ff;margin-top:15px;">Tạo tài khoản</button>
     </div>
 
     <div id="main-app" class="hidden">
-        <div class="header"><h1>Đoạn chat</h1><button class="circle-btn" onclick="logout()">✕</button></div>
+        <div class="header">
+            <button class="circle-btn" onclick="toggleMainSettings()">⚙️</button>
+            <h1 id="tab-title">Đoạn chat</h1>
+            <div style="width:36px;"></div>
+        </div>
+
+        <div id="settings-main" class="overlay-box hidden">
+            <div style="display:flex; align-items:center; margin-bottom:15px;">
+                <div class="avatar" style="width:40px; height:40px;" id="my-ava">?</div>
+                <b id="my-name"></b>
+            </div>
+            <button style="width:100%;background:var(--primary);border:none;color:white;padding:10px;border-radius:8px;margin-bottom:10px;" onclick="requestNotif()">🔔 Bật thông báo</button>
+            <button style="width:100%;background:#3a3b3c;border:none;color:#ff4444;padding:10px;border-radius:8px;" onclick="logout()">Đăng xuất</button>
+        </div>
+
         <div class="tabs">
             <div class="tab active" onclick="switchTab('chats')">ĐOẠN CHAT</div>
-            <div class="tab" onclick="switchTab('reqs')">LỜI MỜI</div>
+            <div class="tab" onclick="switchTab('find')">TÌM BẠN</div>
+            <div class="tab" id="tab-req-btn" onclick="switchTab('reqs')">
+                LỜI MỜI <span class="badge" id="req-count">0</span>
+            </div>
         </div>
-        <div id="tab-chats" class="list-container">
-            <div style="padding:10px 16px;"><input type="text" id="find-user" placeholder="Tìm @username..." onkeyup="searchUser(this.value)" style="width:100%;background:#222;border:none;padding:10px;border-radius:10px;color:white;"></div>
-            <div id="search-res"></div>
-            <div id="chat-list"></div>
+
+        <div id="tab-chats" class="list-container"><div id="chat-list"></div></div>
+        <div id="tab-find" class="list-container hidden">
+            <div class="search-box-wrap"><input type="text" class="search-input" id="search-friend" placeholder="Nhập chính xác @username..." onkeyup="secureSearch(this.value)"></div>
+            <div id="search-result"></div>
         </div>
         <div id="tab-reqs" class="list-container hidden"><div id="req-list"></div></div>
     </div>
@@ -64,22 +86,13 @@
         <div class="chat-header">
             <button style="background:none;border:none;color:var(--primary);font-size:24px;" onclick="closeChat()">❮</button>
             <div class="avatar" style="width:36px;height:36px;font-size:14px;margin-left:10px;" id="h-ava"></div>
-            <b id="chat-with" style="margin-left:10px;flex:1;" onclick="toggleSettings()"></b>
-            <button class="circle-btn" onclick="toggleSettings()">⋮</button>
+            <b id="chat-with" style="margin-left:10px;flex:1;"></b>
+            <button class="circle-btn" onclick="toggleChatSettings()">⋮</button>
         </div>
-
-        <div id="settings-box" class="hidden">
-            <button class="setting-btn" onclick="setNickname()">✏️ Đổi biệt danh</button>
-            <button class="setting-btn" style="color:#ff4444;" onclick="removeFriend()">💔 Hủy kết bạn</button>
-        </div>
-
         <div id="chat-box" class="messages"></div>
         <div class="input-bar">
-            <label for="img-in" style="font-size:22px;">📷</label>
-            <input type="file" id="img-in" class="hidden" accept="image/*" onchange="sendImg(this)">
-            
-            <button id="record-btn" class="record-btn" ontouchstart="startRecording()" ontouchend="stopRecording()" onmousedown="startRecording()" onmouseup="stopRecording()">🎤</button>
-            
+            <label style="font-size:22px;">📷<input type="file" class="hidden" accept="image/*" onchange="sendImg(this)"></label>
+            <button id="rec-btn" style="font-size:22px;background:none;border:none;color:var(--primary);" ontouchstart="startRec()" ontouchend="stopRec()" onmousedown="startRec()" onmouseup="stopRec()">🎤</button>
             <input type="text" id="msg-input" placeholder="Aa" onkeypress="if(event.key==='Enter')sendText()">
             <button style="border:none;background:none;color:var(--primary);font-weight:bold;" onclick="sendText()">GỬI</button>
         </div>
@@ -89,16 +102,25 @@
         const conf = { databaseURL: "https://pz-chat-f22e1-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(conf);
         const rtdb = firebase.database();
-        let me = localStorage.getItem('pz_user'), talkingTo = "", mediaRecorder, audioChunks = [];
+        let me = localStorage.getItem('pz_user'), talkingTo = "", mRec, chunks = [], isTabActive = true;
+
+        window.onfocus = () => { isTabActive = true; };
+        window.onblur = () => { isTabActive = false; };
 
         window.onload = () => { if(me) showApp(); else document.getElementById('auth-box').classList.remove('hidden'); };
 
-        async function register() {
-            const u = document.getElementById('u-name').value.trim().toLowerCase(), p = document.getElementById('u-pass').value.trim();
-            if(!u.startsWith('@')) return alert("Cần @");
-            const s = await rtdb.ref('accounts/'+u.replace('@','')).once('value');
-            if(s.exists()) return alert("Tên đã có!");
-            await rtdb.ref('accounts/'+u.replace('@','')).set({pass:p}); alert("Xong!");
+        async function requestNotif() {
+            const permission = await Notification.requestPermission();
+            if(permission === "granted") alert("Đã bật thông báo thành công!");
+        }
+
+        function sendPushNotif(sender, text) {
+            if (!isTabActive && Notification.permission === "granted") {
+                new Notification(`PZ Messenger: ${sender}`, {
+                    body: text,
+                    icon: 'https://cdn-icons-png.flaticon.com/512/5968/5968771.png'
+                });
+            }
         }
 
         async function login() {
@@ -107,32 +129,61 @@
             if(s.val()?.pass === p) { me = u; localStorage.setItem('pz_user', me); showApp(); } else alert("Sai!");
         }
 
+        async function register() {
+            const u = document.getElementById('u-name').value.trim().toLowerCase(), p = document.getElementById('u-pass').value.trim();
+            const s = await rtdb.ref('accounts/'+u.replace('@','')).once('value');
+            if(s.exists()) return alert("Đã tồn tại!");
+            await rtdb.ref('accounts/'+u.replace('@','')).set({pass:p, active:true}); alert("Xong!");
+        }
+
         function showApp() {
             document.getElementById('auth-box').classList.add('hidden');
             document.getElementById('main-app').classList.remove('hidden');
-            loadChats(); loadRequests();
+            document.getElementById('my-name').innerText = me;
+            document.getElementById('my-ava').innerText = me[1].toUpperCase();
+            rtdb.ref('accounts/'+me.replace('@','')+'/active').set(true);
+            loadChats(); loadRequests(); listenToAllMessages();
+        }
+
+        // Lắng nghe tất cả tin nhắn để hiện thông báo khi đang ở ngoài màn hình chat
+        function listenToAllMessages() {
+            rtdb.ref('users/'+me.replace('@','')+'/friends').on('value', s => {
+                s.forEach(c => {
+                    const cid = [me.replace('@',''), c.key].sort().join('_');
+                    // Chỉ lấy tin nhắn cuối cùng mới nhất
+                    rtdb.ref('messages/'+cid).limitToLast(1).on('child_added', snap => {
+                        const d = snap.val();
+                        if (d.s !== me && d.time > Date.now() - 5000) { // Tin nhắn mới trong 5s qua
+                            sendPushNotif(d.s, d.t || "Đã gửi một phương tiện");
+                        }
+                    });
+                });
+            });
         }
 
         function switchTab(t) {
             document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
             document.querySelectorAll('.list-container').forEach(e => e.classList.add('hidden'));
-            event.target.classList.add('active');
+            const tabs = {chats:0, find:1, reqs:2};
+            document.querySelectorAll('.tab')[tabs[t]].classList.add('active');
             document.getElementById('tab-'+t).classList.remove('hidden');
+            document.getElementById('tab-title').innerText = t==='chats'?'Đoạn chat':t==='find'?'Tìm bạn bè':'Lời mời';
         }
-
-        function searchUser(v) {
-            v = v.toLowerCase(); if(v.length < 2 || v === me) return;
-            document.getElementById('search-res').innerHTML = `<div class="chat-item"><div class="avatar">?</div><div class="chat-info"><div class="name">${v}</div></div><button style="background:var(--primary);border:none;color:white;padding:5px 10px;border-radius:5px;" onclick="sendRequest('${v}')">Thêm</button></div>`;
-        }
-
-        function sendRequest(n) { rtdb.ref('requests/'+n.replace('@','')+'/'+me.replace('@','')).set(true); alert("Đã gửi!"); }
 
         function loadRequests() {
             rtdb.ref('requests/'+me.replace('@','')).on('value', s => {
-                const div = document.getElementById('req-list'); div.innerHTML = "";
+                const div = document.getElementById('req-list');
+                const badge = document.getElementById('req-count');
+                div.innerHTML = "";
+                if(!s.exists()) { badge.innerText = "0"; return; }
+                let count = 0;
                 s.forEach(c => {
-                    div.innerHTML += `<div class="chat-item"><div class="avatar">${c.key[0].toUpperCase()}</div><div class="chat-info"><div class="name">@${c.key}</div></div><button style="background:var(--primary);border:none;color:white;padding:5px 10px;border-radius:5px;" onclick="acceptFriend('${c.key}')">Chấp nhận</button></div>`;
+                    count++;
+                    div.innerHTML += `<div class="chat-item"><div class="avatar">${c.key[0].toUpperCase()}</div><div class="chat-info"><div class="name">@${c.key}</div></div><button class="btn-blue" onclick="acceptFriend('${c.key}')">Chấp nhận</button></div>`;
                 });
+                badge.innerText = count;
+                document.getElementById('tab-req-btn').classList.add('has-notif');
+                if(!isTabActive) sendPushNotif("Hệ thống", `Bạn có ${count} lời mời kết bạn mới!`);
             });
         }
 
@@ -146,10 +197,10 @@
             rtdb.ref('users/'+me.replace('@','')+'/friends').on('value', s => {
                 const div = document.getElementById('chat-list'); div.innerHTML = "";
                 s.forEach(c => {
-                    const friend = '@' + c.key;
-                    rtdb.ref('settings/'+[me.replace('@',''),c.key].sort().join('_')+'/nick_'+c.key).on('value', n => {
-                        const dname = n.val() || friend;
-                        div.innerHTML += `<div class="chat-item" id="chat-${c.key}" onclick="openChat('${friend}')"><div class="avatar">${c.key[0].toUpperCase()}</div><div class="chat-info"><div class="name">${dname}</div></div></div>`;
+                    const fid = c.key;
+                    rtdb.ref('accounts/'+fid+'/active').on('value', act => {
+                        const isOnline = act.val() ? 'is-online' : '';
+                        div.innerHTML += `<div class="chat-item ${isOnline}" onclick="openChat('@${fid}')"><div class="avatar">${fid[0].toUpperCase()}<div class="online-dot"></div></div><div class="chat-info"><div class="name">@${fid}</div></div></div>`;
                     });
                 });
             });
@@ -157,88 +208,64 @@
 
         function openChat(n) {
             talkingTo = n; document.getElementById('chat-window').classList.remove('hidden');
+            document.getElementById('chat-with').innerText = n;
             const cid = [me.replace('@',''), talkingTo.replace('@','')].sort().join('_');
-            rtdb.ref('settings/'+cid).on('value', s => {
-                const data = s.val() || {};
-                document.getElementById('chat-with').innerText = data['nick_'+talkingTo.replace('@','')] || talkingTo;
-                document.documentElement.style.setProperty('--primary', data.theme || '#0084ff');
-            });
             rtdb.ref('messages/'+cid).off();
             rtdb.ref('messages/'+cid).on('value', s => {
                 const b = document.getElementById('chat-box'); b.innerHTML = "";
                 s.forEach(c => {
-                    const d = c.val(); const cls = d.s === me ? 'me' : 'them';
-                    let content = d.t ? `<div class="bubble">${d.t}</div>` : (d.img ? `<img src="${d.img}" style="width:100%;border-radius:12px;">` : `<div class="bubble voice-bubble"><button onclick="playVoice('${d.voice}')" style="background:none;border:none;font-size:20px;">▶️</button><div style="height:2px;flex:1;background:rgba(255,255,255,0.3);border-radius:2px;"></div></div>`);
-                    b.innerHTML += `<div class="msg-row ${cls}">${content}</div>`;
+                    const d = c.val(), cls = d.s === me ? 'me' : 'them';
+                    let cont = d.t ? `<div class="bubble">${d.t}</div>` : (d.img ? `<img src="${d.img}" style="width:100%;border-radius:12px;">` : `<div class="bubble" onclick="new Audio('${d.voice}').play()">🎤 Tin nhắn thoại</div>`);
+                    b.innerHTML += `<div class="msg-row ${cls}">${cont}</div>`;
                 });
                 b.scrollTop = b.scrollHeight;
             });
         }
 
-        // --- HỆ THỐNG GHI ÂM ---
-        async function startRecording() {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-            mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-                const reader = new FileReader();
-                reader.onload = e => {
-                    const cid = [me.replace('@',''), talkingTo.replace('@','')].sort().join('_');
-                    rtdb.ref('messages/'+cid).push({ s: me, voice: e.target.result, time: Date.now() });
-                };
-                reader.readAsDataURL(audioBlob);
-                audioChunks = [];
-            };
-            mediaRecorder.start();
-            document.getElementById('record-btn').classList.add('recording');
-        }
-
-        function stopRecording() {
-            if(mediaRecorder) {
-                mediaRecorder.stop();
-                document.getElementById('record-btn').classList.remove('recording');
-            }
-        }
-
-        function playVoice(base64) {
-            const audio = new Audio(base64);
-            audio.play();
-        }
-
         function sendText() {
             const i = document.getElementById('msg-input'); if(!i.value.trim()) return;
-            const cid = [me.replace('@',''), talkingTo.replace('@','')].sort().join('_');
-            rtdb.ref('messages/'+cid).push({ s: me, t: i.value, time: Date.now() });
-            i.value = "";
+            rtdb.ref('messages/'+[me.replace('@',''),talkingTo.replace('@','')].sort().join('_')).push({ s: me, t: i.value, time: Date.now() }); i.value = "";
         }
 
         function sendImg(input) {
             const reader = new FileReader();
             reader.onload = e => {
-                const cid = [me.replace('@',''), talkingTo.replace('@','')].sort().join('_');
-                rtdb.ref('messages/'+cid).push({ s: me, img: e.target.result, time: Date.now() });
+                rtdb.ref('messages/'+[me.replace('@',''),talkingTo.replace('@','')].sort().join('_')).push({ s: me, img: e.target.result, time: Date.now() });
             };
             reader.readAsDataURL(input.files[0]);
         }
 
-        function setNickname() {
-            const n = prompt("Biệt danh cho " + talkingTo);
-            if(n) rtdb.ref('settings/'+[me.replace('@',''),talkingTo.replace('@','')].sort().join('_')+'/nick_'+talkingTo.replace('@','')).set(n);
+        async function startRec() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mRec = new MediaRecorder(stream);
+            mRec.ondataavailable = e => chunks.push(e.data);
+            mRec.onstop = () => {
+                const blob = new Blob(chunks, { type: 'audio/mp3' });
+                const reader = new FileReader();
+                reader.onload = e => {
+                    rtdb.ref('messages/'+[me.replace('@',''),talkingTo.replace('@','')].sort().join('_')).push({ s: me, voice: e.target.result, time: Date.now() });
+                };
+                reader.readAsDataURL(blob); chunks = [];
+            };
+            mRec.start();
         }
+        function stopRec() { if(mRec) mRec.stop(); }
 
-        function removeFriend() {
-            if(confirm("Hủy kết bạn?")) {
-                const fId = talkingTo.replace('@',''), mId = me.replace('@','');
-                rtdb.ref('users/'+mId+'/friends/'+fId).remove();
-                rtdb.ref('users/'+fId+'/friends/'+mId).remove();
-                closeChat();
+        function toggleMainSettings() { document.getElementById('settings-main').classList.toggle('hidden'); }
+        function closeChat() { document.getElementById('chat-window').classList.add('hidden'); }
+        function logout() { localStorage.removeItem('pz_user'); location.reload(); }
+        async function secureSearch(v) {
+            v = v.toLowerCase().trim();
+            const resDiv = document.getElementById('search-result');
+            if(v.length < 2 || v === me) { resDiv.innerHTML = ""; return; }
+            const s = await rtdb.ref('accounts/'+v.replace('@','')).once('value');
+            if(s.exists()) {
+                resDiv.innerHTML = `<div class="chat-item"><div class="avatar">${v[1].toUpperCase()}</div><div class="chat-info"><div class="name">${v}</div></div><button class="btn-blue" onclick="sendRequest('${v}')">Kết bạn</button></div>`;
+            } else {
+                resDiv.innerHTML = `<p style="text-align:center;color:#555;margin-top:20px;">Không tìm thấy</p>`;
             }
         }
-
-        function toggleSettings() { document.getElementById('settings-box').classList.toggle('hidden'); }
-        function closeChat() { document.getElementById('chat-window').classList.add('hidden'); talkingTo = ""; }
-        function logout() { localStorage.removeItem('pz_user'); location.reload(); }
+        function sendRequest(n) { rtdb.ref('requests/'+n.replace('@','')+'/'+me.replace('@','')).set(true); alert("Đã gửi!"); }
     </script>
 </body>
 </html>
