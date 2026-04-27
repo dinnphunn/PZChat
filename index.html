@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PZ Messenger V20 - Final</title>
+    <title>PZ Messenger V22</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -73,6 +73,7 @@
                 <span>Trạng thái hoạt động</span>
                 <label class="switch"><input type="checkbox" id="act-toggle" checked onchange="updateActiveStatus(this.checked)"><span class="slider"></span></label>
             </div>
+            <button style="width:100%;background:var(--primary);border:none;color:white;padding:10px;border-radius:8px;margin-bottom:10px;" onclick="enableNotif()">🔔 Bật thông báo</button>
             <button style="width:100%;background:#3a3b3c;border:none;color:#ff4444;padding:10px;border-radius:8px;" onclick="logout()">Đăng xuất</button>
         </div>
 
@@ -99,7 +100,7 @@
 
         <div id="settings-chat" class="overlay-box hidden">
             <button style="width:100%;background:#3a3b3c;border:none;color:white;padding:10px;border-radius:8px;margin-bottom:10px;text-align:left;" onclick="setNickname()">✏️ Đổi biệt danh</button>
-            <b>Chọn màu chủ đề:</b>
+            <b>Màu chủ đề:</b>
             <div class="color-grid" id="color-picker"></div>
             <button style="width:100%;background:#3a3b3c;border:none;color:#ff4444;padding:10px;border-radius:8px;text-align:left;margin-top:10px;" onclick="removeFriend()">💔 Hủy kết bạn</button>
         </div>
@@ -118,84 +119,80 @@
         const conf = { databaseURL: "https://pz-chat-f22e1-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(conf);
         const rtdb = firebase.database();
-        let me = localStorage.getItem('pz_user'), talkingTo = "", mRec, chunks = [], recInterval, finalSec = 0;
-
+        let me = localStorage.getItem('pz_user'), talkingTo = "", mRec, chunks = [], recInterval, startTime;
         const colors = ["#0084ff", "#44bec7", "#ffc300", "#fa3c4c", "#d696bb", "#6699cc", "#13cf13", "#ff7e29", "#e68585", "#7646ff", "#20cef5", "#67187a", "#ff5ca1", "#a695c7", "#00d2d3"];
 
         window.onload = () => {
             const picker = document.getElementById('color-picker');
             colors.forEach(c => {
-                const dot = document.createElement('div');
-                dot.className = 'color-dot';
-                dot.style.background = c;
+                const dot = document.createElement('div'); dot.className = 'color-dot'; dot.style.background = c;
                 dot.onclick = () => { rtdb.ref('settings/'+getRoomId()+'/color').set(c); toggleChatSettings(); };
                 picker.appendChild(dot);
             });
             if(me) showApp();
         };
 
-        function login() {
-            const u = document.getElementById('u-name').value.trim(), p = document.getElementById('u-pass').value;
-            if(!u || !p) return alert("Nhập đủ!");
-            rtdb.ref('accounts/'+u.replace('@','')).once('value', s => {
-                if(s.exists() && s.val().p === p) { localStorage.setItem('pz_user', u); location.reload(); }
-                else alert("Sai thông tin!");
-            });
-        }
-
-        function register() {
-            const u = document.getElementById('u-name').value.trim(), p = document.getElementById('u-pass').value;
-            if(!u || p.length < 4) return alert("Tên @ và Pass > 4 ký tự!");
-            rtdb.ref('accounts/'+u.replace('@','')).set({ p: p, active: true }).then(() => alert("Xong! Hãy đăng nhập."));
-        }
-
-        function showApp() {
-            document.getElementById('auth-box').classList.add('hidden');
-            document.getElementById('main-app').classList.remove('hidden');
-            document.getElementById('my-name').innerText = me;
-            document.getElementById('my-ava').innerText = me[1].toUpperCase();
-            rtdb.ref('accounts/'+me.replace('@','')+'/active').set(true);
-            loadChats(); loadRequests();
-        }
-
+        // --- FIXED VOICE LOGIC ---
         async function startRec(e) {
-            if(e) e.preventDefault();
+            e.preventDefault();
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mRec = new MediaRecorder(stream); chunks = []; finalSec = 0;
+                mRec = new MediaRecorder(stream); chunks = [];
+                startTime = Date.now(); // Lấy mốc bắt đầu
                 document.getElementById('rec-ui').classList.remove('hidden');
-                recInterval = setInterval(() => { finalSec++; document.getElementById('rec-time').innerText = finalSec+'s'; }, 1000);
-                mRec.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+                recInterval = setInterval(() => {
+                    let sec = Math.round((Date.now() - startTime) / 1000);
+                    document.getElementById('rec-time').innerText = sec + 's';
+                }, 1000);
+                mRec.ondataavailable = ev => chunks.push(ev.data);
                 mRec.onstop = () => {
-                    const blob = new Blob(chunks, { type: 'audio/mp3' });
+                    let duration = Math.round((Date.now() - startTime) / 1000); // Tính tổng thời gian thực tế
+                    if(duration < 1) duration = 1; // Tối thiểu 1 giây
                     const reader = new FileReader();
-                    reader.onloadend = () => { rtdb.ref('messages/'+getRoomId()).push({ s: me, voice: reader.result, duration: finalSec, time: Date.now() }); };
-                    reader.readAsDataURL(blob);
+                    reader.onloadend = () => {
+                        rtdb.ref('messages/'+getRoomId()).push({
+                            s: me, voice: reader.result, duration: duration, time: Date.now()
+                        });
+                    };
+                    reader.readAsDataURL(new Blob(chunks));
                 };
                 mRec.start();
-            } catch(err) { alert("Cần Mic!"); }
+            } catch(err) { alert("Lỗi mic!"); }
         }
 
         function stopRec(e) {
-            if(e) e.preventDefault();
-            if(mRec?.state !== "inactive") { mRec.stop(); clearInterval(recInterval); document.getElementById('rec-ui').classList.add('hidden'); }
+            e.preventDefault();
+            if(mRec?.state !== "inactive") {
+                mRec.stop();
+                clearInterval(recInterval);
+                document.getElementById('rec-ui').classList.add('hidden');
+            }
         }
 
+        // --- FIXED LIST LOGIC (Dùng ID để không bị nhân đôi) ---
         function loadChats() {
             rtdb.ref('users/'+me.replace('@','')+'/friends').on('value', s => {
-                const div = document.getElementById('chat-list'); div.innerHTML = "";
+                const div = document.getElementById('chat-list');
+                div.innerHTML = "";
                 s.forEach(c => {
                     const fid = c.key;
+                    const item = document.createElement('div');
+                    item.className = 'chat-item';
+                    item.id = 'friend-item-' + fid;
+                    item.onclick = () => openChat('@'+fid);
+                    div.appendChild(item);
+
                     rtdb.ref('accounts/'+fid+'/active').on('value', act => {
-                        const isOnline = act.val() ? 'is-online' : '';
+                        item.className = 'chat-item ' + (act.val() ? 'is-online' : '');
                         rtdb.ref('settings/'+[me.replace('@',''),fid].sort().join('_')+'/nick_'+fid).on('value', nick => {
-                            div.innerHTML += `<div class="chat-item ${isOnline}" onclick="openChat('@${fid}')"><div class="avatar">${fid[0].toUpperCase()}<div class="online-dot"></div></div><div class="chat-info"><b>${nick.val() || '@'+fid}</b></div></div>`;
+                            item.innerHTML = `<div class="avatar">${fid[0].toUpperCase()}<div class="online-dot"></div></div><div class="chat-info"><b>${nick.val() || '@'+fid}</b></div>`;
                         });
                     });
                 });
             });
         }
 
+        // --- CÁC HÀM CÒN LẠI GIỮ NGUYÊN ---
         function openChat(n) {
             talkingTo = n; document.getElementById('chat-window').classList.remove('hidden');
             const rid = getRoomId();
@@ -212,12 +209,14 @@
                 b.scrollTop = b.scrollHeight;
             });
         }
-
+        function login() { const u = document.getElementById('u-name').value.trim(), p = document.getElementById('u-pass').value; rtdb.ref('accounts/'+u.replace('@','')).once('value', s => { if(s.exists() && s.val().p === p) { localStorage.setItem('pz_user', u); location.reload(); } else alert("Sai!"); }); }
+        function register() { const u = document.getElementById('u-name').value.trim(), p = document.getElementById('u-pass').value; rtdb.ref('accounts/'+u.replace('@','')).set({ p: p, active: true }).then(() => alert("Xong!")); }
+        function showApp() { document.getElementById('auth-box').classList.add('hidden'); document.getElementById('main-app').classList.remove('hidden'); document.getElementById('my-name').innerText = me; document.getElementById('my-ava').innerText = me[1].toUpperCase(); rtdb.ref('accounts/'+me.replace('@','')+'/active').set(true); loadChats(); loadRequests(); }
         function getRoomId() { return [me.replace('@',''), talkingTo.replace('@','')].sort().join('_'); }
         function sendText() { const i = document.getElementById('msg-input'); if(!i.value.trim()) return; rtdb.ref('messages/'+getRoomId()).push({ s: me, t: i.value, time: Date.now() }); i.value = ""; }
         function sendImg(input) { const reader = new FileReader(); reader.onload = e => rtdb.ref('messages/'+getRoomId()).push({ s: me, img: e.target.result, time: Date.now() }); reader.readAsDataURL(input.files[0]); }
-        function setNickname() { const n = prompt("Nhập biệt danh:"); if(n) rtdb.ref('settings/'+getRoomId()+'/nick_'+talkingTo.replace('@','')).set(n); }
-        function removeFriend() { if(confirm("Xóa bạn?")) { const f=talkingTo.replace('@',''), m=me.replace('@',''); rtdb.ref('users/'+m+'/friends/'+f).remove(); rtdb.ref('users/'+f+'/friends/'+m).remove(); closeChat(); } }
+        function setNickname() { const n = prompt("Biệt danh:"); if(n) rtdb.ref('settings/'+getRoomId()+'/nick_'+talkingTo.replace('@','')).set(n); }
+        function removeFriend() { if(confirm("Xóa?")) { const f=talkingTo.replace('@',''), m=me.replace('@',''); rtdb.ref('users/'+m+'/friends/'+f).remove(); rtdb.ref('users/'+f+'/friends/'+m).remove(); closeChat(); } }
         async function secureSearch(v) { v = v.toLowerCase().trim(); const res = document.getElementById('search-result'); if(v.length < 2 || v === me) { res.innerHTML = ""; return; } const s = await rtdb.ref('accounts/'+v.replace('@','')).once('value'); if(s.exists()) res.innerHTML = `<div class="chat-item"><div class="avatar">${v[1].toUpperCase()}</div><div class="chat-info"><b>${v}</b></div><button class="circle-btn" style="background:var(--primary);width:auto;padding:0 15px;border-radius:8px;" onclick="sendRequest('${v}')">Kết bạn</button></div>`; }
         function sendRequest(n) { rtdb.ref('requests/'+n.replace('@','')+'/'+me.replace('@','')).set(true); alert("Đã gửi!"); }
         function loadRequests() { rtdb.ref('requests/'+me.replace('@','')).on('value', s => { const badge = document.getElementById('req-count'); const div = document.getElementById('req-list'); div.innerHTML = ""; let count = 0; s.forEach(c => { count++; div.innerHTML += `<div class="chat-item"><div class="avatar">${c.key[0].toUpperCase()}</div><div class="chat-info"><b>@${c.key}</b></div><button class="circle-btn" style="background:var(--primary);width:auto;padding:0 15px;border-radius:8px;" onclick="acceptFriend('${c.key}')">Duyệt</button></div>`; }); badge.innerText = count; document.getElementById('tab-req-btn').className = count > 0 ? 'tab has-notif' : 'tab'; }); }
@@ -228,6 +227,7 @@
         function switchTab(t) { document.querySelectorAll('.tab').forEach(e => e.classList.remove('active')); document.querySelectorAll('.list-container').forEach(e => e.classList.add('hidden')); const tabs = {chats:0, find:1, reqs:2}; document.querySelectorAll('.tab')[tabs[t]].classList.add('active'); document.getElementById('tab-'+t).classList.remove('hidden'); }
         function closeChat() { document.getElementById('chat-window').classList.add('hidden'); document.getElementById('settings-chat').classList.add('hidden'); }
         function logout() { rtdb.ref('accounts/'+me.replace('@','')+'/active').set(false); localStorage.removeItem('pz_user'); location.reload(); }
+        function enableNotif() { Notification.requestPermission(); }
     </script>
 </body>
 </html>
